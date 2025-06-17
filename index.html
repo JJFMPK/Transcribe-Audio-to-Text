@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>🎙️ Audio Transcription Online Free</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <meta name="theme-color" content="#4caf50" />
+    <style>
+        body {
+            font-family: 'Noto Nastaliq Urdu', 'Arial', sans-serif;
+            background-color: #f7f9fc;
+            padding-top: 30px;
+            text-align: center;
+        }
+        textarea {
+            height: 300px;
+            font-size: 20px;
+            direction: rtl;
+        }
+        .mic-button {
+            font-size: 50px;
+            color: #fff;
+            background-color: #dc3545;
+            border: none;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            margin: 20px auto;
+            display: block;
+            transition: background-color 0.3s;
+        }
+        .mic-button.active {
+            background-color: #28a745;
+        }
+        .timer {
+            font-size: 20px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="mb-3">🎙️ Transcribe Audio to Text Online Free</h1>
+
+    <div class="container">
+
+        <div class="mb-3">
+            <label class="form-label">Select Language:</label>
+            <select id="language" class="form-select w-50 mx-auto">
+                <option value="ur-PK">اردو (پاکستان)</option>
+                <option value="en-US">English (US)</option>
+                <option value="ar-SA">العربية (Saudi Arabia)</option>
+                <option value="hi-IN">हिन्दी (भारत)</option>
+                <option value="fa-IR">فارسی (ایران)</option>
+            </select>
+        </div>
+
+        <button id="mic" class="mic-button">🎤</button>
+        <div class="timer" id="timer">⏱️ 00:00</div>
+
+        <textarea id="output" class="form-control mt-3" placeholder="یہاں اردو تحریر نمودار ہوگی..."></textarea>
+
+        <div class="d-flex justify-content-center gap-2 mt-3">
+            <button class="btn btn-primary" id="copy">📋 Copy</button>
+            <button class="btn btn-success" id="download">⬇️ Download</button>
+            <button class="btn btn-secondary" id="reset">♻️ Reset</button>
+        </div>
+
+    </div>
+
+    <script>
+        const micButton = document.getElementById('mic');
+        const output = document.getElementById('output');
+        const languageSelect = document.getElementById('language');
+        const copyBtn = document.getElementById('copy');
+        const downloadBtn = document.getElementById('download');
+        const resetBtn = document.getElementById('reset');
+        const timerDisplay = document.getElementById('timer');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert('آپ کا براؤزر Speech Recognition سپورٹ نہیں کرتا۔ براہ کرم Chrome استعمال کریں۔');
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = languageSelect.value;
+
+            let isRecording = false;
+            let timerInterval;
+            let seconds = 0;
+
+            micButton.addEventListener('click', () => {
+                if (!isRecording) {
+                    recognition.lang = languageSelect.value;
+                    recognition.start();
+                    micButton.classList.add('active');
+                    isRecording = true;
+                    startTimer();
+                } else {
+                    recognition.stop();
+                    micButton.classList.remove('active');
+                    isRecording = false;
+                    stopTimer();
+                    autoSave();
+                }
+            });
+
+            recognition.onresult = (event) => {
+                let transcript = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                output.value = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+            };
+
+            recognition.onend = () => {
+                if (isRecording) {
+                    recognition.start();
+                }
+            };
+
+            // Timer
+            function startTimer() {
+                seconds = 0;
+                timerDisplay.textContent = '⏱️ 00:00';
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const min = String(Math.floor(seconds / 60)).padStart(2, '0');
+                    const sec = String(seconds % 60).padStart(2, '0');
+                    timerDisplay.textContent = `⏱️ ${min}:${sec}`;
+                }, 1000);
+            }
+
+            function stopTimer() {
+                clearInterval(timerInterval);
+            }
+
+            // Copy
+            copyBtn.addEventListener('click', () => {
+                output.select();
+                document.execCommand('copy');
+                alert('متن کو کاپی کر لیا گیا ہے!');
+            });
+
+            // Download
+            downloadBtn.addEventListener('click', () => {
+                const blob = new Blob([output.value], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'urdu_transcript.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+
+            // Reset
+            resetBtn.addEventListener('click', () => {
+                output.value = '';
+                localStorage.removeItem('urdu_transcript');
+            });
+
+            // Auto Save
+            function autoSave() {
+                localStorage.setItem('urdu_transcript', output.value);
+            }
+
+            // Load Auto Save
+            window.addEventListener('load', () => {
+                const saved = localStorage.getItem('urdu_transcript');
+                if (saved) {
+                    output.value = saved;
+                }
+            });
+        }
+
+        // PWA install
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js').then(reg => {
+                    console.log('Service Worker Registered ✅');
+                });
+            });
+        }
+    </script>
+
+</body>
+</html>
